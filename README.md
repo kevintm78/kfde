@@ -1,18 +1,25 @@
-## Linux Kernel for Android
-***I'm not a developer nor do I have any formal education regarding Android development (or anything else). These notes are here just for convenience. Some information could be inaccurate and I welcome any input/corrections.***
+##### Samsung has removed the download for some (vintage) devices including most of the trlte variants. The initial tag is an untouched upload of the kernel.zip for the SM-N910V. [Mirror](https://www.androidfilehost.com/?fid=14943124697586354076) of the original zip from Samsung.
 
-Samsung has removed the download for some (vintage) devices including most of the trlte variants. The initial tag is an untouched upload of the kernel.zip for the SM-N910V.
+###### ***I'm not a developer nor do I have any formal education regarding Android development (or anything else). These notes are here just for convenience. Some information could be inaccurate and I welcome any input/corrections.***
 
+**Repo Specs**
+* Linux kernel v.3.10.40
 * Device = trltevzw
 * Firmware = N910VVRU2CQL1
-* Toolchain = arm-eabi-4.8 **Google prebuilt**
-* Host OS = Ubuntu 18.04.5 LTS
+* Toolchain = arm-eabi-4.8
 
-**Environment Setup**
-
+**Build Environment**
+* Distro = LMDE 4 Debbie 
+* Base = Debian 10.2
 * Java 8
 
       sudo apt-get install openjdk-8-jdk
+
+* If using Mint's Debian version add the following software repo for openjdk-8-jdk
+
+      deb http://ftp.us.debian.org/debian stretch main
+
+      
 
 * Build Tools
 
@@ -28,22 +35,28 @@ Samsung has removed the download for some (vintage) devices including most of th
 
       git clone https://bitbucket.org/UBERTC/arm-eabi-4.8.git
 
-### Python 2.7
-**Build failed on a clean Ubuntu 18.04 install due to python errors. These packages fixed it.**
-
-    sudo apt-get install python2.7 python-all
-
+**@osm0sis rep0sis**
+* [Anykernel3](https://github.com/osm0sis/AnyKernel3.git)
+* [Android Image Kitchen](https://github.com/osm0sis/Android-Image-Kitchen.git)
 
 **Building with CCACHE**
 
     export USE_CCACHE=1
     export CCACHE_EXEC=$(command -v ccache)
+    
+### Python 2.7
+**Build failed on a clean Ubuntu 18.04 install due to python errors. These packages fixed it.**
+
+    sudo apt-get install python2.7 python-all
 
 ### References - Android Stuff that may or may not be related to this project
 * [Android](https://source.android.com/) - In depth resource for building Android.
-* [XDA](https://www.xda-developers.com/) - Lots of guides
+* [AOSP-Mirror Links](https://aosp-mirror.github.io/)
+* [XDA](https://www.xda-developers.com/)
 * [Samsung Source Code](https://opensource.samsung.com)
-* [Anykernel3](https://github.com/osm0sis/AnyKernel3.git) - Makes kernel flashing easier and less intrusive.
-* [Android Image Kitchen](https://github.com/osm0sis/Android-Image-Kitchen.git) - If you need/want to build a boot.img
 * [Magisk](https://github.com/topjohnwu/Magisk.git)
 * [OpenGapps](https://github.com/opengapps/opengapps.git)
+* [Manpages for xz compression](http://http://manpages.org/xz)
+* [Kernel.org commit tree v3.10.y](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/log/?h=linux-3.10.y)
+* [Google kernel source for v3.10.y](https://kernel.googlesource.com/pub/scm/linux/kernel/git/stable/linux/+/refs/heads/linux-3.10.y)
+
