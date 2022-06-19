@@ -21,8 +21,8 @@ struct mmc_gpio {
 	int ro_gpio;
 	int cd_gpio;
 	char *ro_label;
-	bool status;
 	char cd_label[0];
+	bool status;
 };
 
 static int mmc_gpio_get_status(struct mmc_host *host)

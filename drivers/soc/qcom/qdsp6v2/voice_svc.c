@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -42,12 +42,6 @@ struct voice_svc_prvt {
 	struct list_head response_queue;
 	wait_queue_head_t response_wait;
 	spinlock_t response_lock;
-	/*
-	 * This mutex ensures responses are processed in sequential order and
-	 * that no two threads access and free the same response at the same
-	 * time.
-	 */
-	struct mutex response_mutex_lock;
 };
 
 struct apr_data {
@@ -174,8 +168,7 @@ static int voice_svc_send_req(struct voice_svc_cmd_request *apr_request,
 	int ret = 0;
 	void *apr_handle = NULL;
 	struct apr_data *aprdata = NULL;
-	uint32_t user_payload_size;
-	uint32_t payload_size;
+	uint32_t user_payload_size = 0;
 
 	pr_debug("%s\n", __func__);
 
@@ -187,19 +180,15 @@ static int voice_svc_send_req(struct voice_svc_cmd_request *apr_request,
 	}
 
 	user_payload_size = apr_request->payload_size;
-	payload_size = sizeof(struct apr_data) + user_payload_size;
 
-	if (payload_size <= user_payload_size) {
-		pr_err("%s: invalid payload size ( 0x%x ).\n",
-			__func__, user_payload_size);
-		ret = -EINVAL;
+	aprdata = kmalloc(sizeof(struct apr_data) + user_payload_size,
+			  GFP_KERNEL);
+
+	if (aprdata == NULL) {
+		pr_err("%s: aprdata kmalloc failed.\n", __func__);
+
+		ret = -ENOMEM;
 		goto done;
-	} else {
-		aprdata = kmalloc(payload_size, GFP_KERNEL);
-		if (aprdata == NULL) {
-			ret = -ENOMEM;
-			goto done;
-		}
 	}
 
 	voice_svc_update_hdr(apr_request, aprdata);
@@ -209,8 +198,8 @@ static int voice_svc_send_req(struct voice_svc_cmd_request *apr_request,
 	} else if (!strcmp(apr_request->svc_name, VOICE_SVC_MVM_STR)) {
 		apr_handle = prtd->apr_q6_mvm;
 	} else {
-		pr_err("%s: Invalid service %.*s\n", __func__,
-			MAX_APR_SERVICE_NAME_LEN, apr_request->svc_name);
+		pr_err("%s: Invalid service %s\n", __func__,
+			apr_request->svc_name);
 
 		ret = -EINVAL;
 		goto done;
@@ -317,8 +306,8 @@ static int process_reg_cmd(struct voice_svc_register *apr_reg_svc,
 		svc = VOICE_SVC_CVS_STR;
 		handle = &prtd->apr_q6_cvs;
 	} else {
-		pr_err("%s: Invalid Service: %.*s\n", __func__,
-			MAX_APR_SERVICE_NAME_LEN, apr_reg_svc->svc_name);
+		pr_err("%s: Invalid Service: %s\n", __func__,
+		       apr_reg_svc->svc_name);
 		ret = -EINVAL;
 		goto done;
 	}
@@ -344,17 +333,7 @@ static ssize_t voice_svc_write(struct file *file, const char __user *buf,
 
 	pr_debug("%s\n", __func__);
 
-	/*
-	 * Check if enough memory is allocated to parse the message type.
-	 * Will check there is enough to hold the payload later.
-	 */
-	if (count >= sizeof(struct voice_svc_write_msg)) {
-		data = kmalloc(count, GFP_KERNEL);
-	} else {
-		pr_debug("%s: invalid data size\n", __func__);
-		ret = -EINVAL;
-		goto done;
-	}
+	data = kmalloc(count, GFP_KERNEL);
 
 	if (data == NULL) {
 		pr_err("%s: data kmalloc failed.\n", __func__);
@@ -372,7 +351,7 @@ static ssize_t voice_svc_write(struct file *file, const char __user *buf,
 	}
 
 	cmd = data->msg_type;
-	prtd = (struct voice_svc_prvt *) file->private_data;
+	prtd = (struct voice_svc_prvt *)file->private_data;
 	if (prtd == NULL) {
 		pr_err("%s: prtd is NULL\n", __func__);
 
@@ -382,40 +361,18 @@ static ssize_t voice_svc_write(struct file *file, const char __user *buf,
 
 	switch (cmd) {
 	case MSG_REGISTER:
-		/*
-		 * Check that count reflects the expected size to ensure
-		 * sufficient memory was allocated. Since voice_svc_register
-		 * has a static size, this should be exact.
-		 */
-		if (count == (sizeof(struct voice_svc_write_msg) +
-			      sizeof(struct voice_svc_register))) {
-			ret = process_reg_cmd(
+		ret = process_reg_cmd(
 			(struct voice_svc_register *)data->payload, prtd);
-			if (!ret)
-				ret = count;
-		} else {
-			pr_err("%s: invalid payload size\n", __func__);
-			ret = -EINVAL;
-			goto done;
-		}
+		if (!ret)
+			ret = count;
+
 		break;
 	case MSG_REQUEST:
-		/*
-		 * Check that count reflects the expected size to ensure
-		 * sufficient memory was allocated. Since voice_svc_cmd_request
-		 * has a variable size, check the minimum value count must be.
-		 */
-		if (count >= (sizeof(struct voice_svc_write_msg) +
-			      sizeof(struct voice_svc_cmd_request))) {
 		ret = voice_svc_send_req(
 			(struct voice_svc_cmd_request *)data->payload, prtd);
 		if (!ret)
 			ret = count;
-	} else {
-		pr_err("%s: invalid payload size\n", __func__);
-		ret = -EINVAL;
-		goto done;
-	}
+
 		break;
 	default:
 		pr_debug("%s: Invalid command: %u\n", __func__, cmd);
@@ -446,7 +403,6 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 		goto done;
 	}
 
-	mutex_lock(&prtd->response_mutex_lock);
 	spin_lock_irqsave(&prtd->response_lock, spin_flags);
 
 	if (list_empty(&prtd->response_queue)) {
@@ -460,7 +416,7 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 			pr_debug("%s: Read timeout\n", __func__);
 
 			ret = -ETIMEDOUT;
-			goto unlock;
+			goto done;
 		} else if (ret > 0 && !list_empty(&prtd->response_queue)) {
 			pr_debug("%s: Interrupt recieved for response\n",
 				 __func__);
@@ -468,7 +424,7 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 			pr_debug("%s: Interrupted by SIGNAL %d\n",
 				 __func__, ret);
 
-			goto unlock;
+			goto done;
 		}
 
 		spin_lock_irqsave(&prtd->response_lock, spin_flags);
@@ -487,7 +443,7 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 		       __func__, count, size);
 
 		ret = -ENOMEM;
-		goto unlock;
+		goto done;
 	}
 
 	if (!access_ok(VERIFY_WRITE, arg, size)) {
@@ -495,7 +451,7 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 		       __func__);
 
 		ret = -EPERM;
-		goto unlock;
+		goto done;
 	}
 
 	ret = copy_to_user(arg, &resp->resp,
@@ -505,7 +461,7 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 		pr_err("%s: copy_to_user failed %d\n", __func__, ret);
 
 		ret = -EPERM;
-		goto unlock;
+		goto done;
 	}
 
 	spin_lock_irqsave(&prtd->response_lock, spin_flags);
@@ -519,8 +475,6 @@ static ssize_t voice_svc_read(struct file *file, char __user *arg,
 
 	ret = count;
 
-unlock:
-	mutex_unlock(&prtd->response_mutex_lock);
 done:
 	return ret;
 }
@@ -545,7 +499,6 @@ static int voice_svc_open(struct inode *inode, struct file *file)
 	INIT_LIST_HEAD(&prtd->response_queue);
 	init_waitqueue_head(&prtd->response_wait);
 	spin_lock_init(&prtd->response_lock);
-	mutex_init(&prtd->response_mutex_lock);
 	file->private_data = (void *)prtd;
 
 	return 0;
@@ -586,7 +539,6 @@ static int voice_svc_flush(struct file *file, fl_owner_t id)
 			pr_err("%s: Failed to dereg MVM %d\n", __func__, ret);
 	}
 
-	mutex_lock(&prtd->response_mutex_lock);
 	spin_lock_irqsave(&prtd->response_lock, spin_flags);
 
 	while (!list_empty(&prtd->response_queue)) {
@@ -600,9 +552,6 @@ static int voice_svc_flush(struct file *file, fl_owner_t id)
 	}
 
 	spin_unlock_irqrestore(&prtd->response_lock, spin_flags);
-	mutex_unlock(&prtd->response_mutex_lock);
-
-	mutex_destroy(&prtd->response_mutex_lock);
 
 done:
 	return ret;

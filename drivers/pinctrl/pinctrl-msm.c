@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -286,7 +286,6 @@ static int msm_dt_node_to_map(struct pinctrl_dev *pctldev,
 	char *fn_name;
 	u32 val;
 	unsigned long *cfg;
-	unsigned int fn_name_len = 0;
 	int cfg_cnt = 0, map_cnt = 0, func_cnt = 0, ret = 0;
 
 	dd = pinctrl_dev_get_drvdata(pctldev);
@@ -312,10 +311,8 @@ static int msm_dt_node_to_map(struct pinctrl_dev *pctldev,
 
 	/* Allocate memory for pin-map entries */
 	map = kzalloc(sizeof(*map) * map_cnt, GFP_KERNEL);
-	if (!map) {
-		kfree(cfg);
+	if (!map)
 		return -ENOMEM;
-	}
 	*nmaps = 0;
 
 	/* Get group name from node */
@@ -334,14 +331,14 @@ static int msm_dt_node_to_map(struct pinctrl_dev *pctldev,
 	}
 	/* Get function mapping */
 	of_property_read_u32(parent, "qcom,pin-func", &val);
-
-	fn_name_len = strlen(grp_name) + strlen("-func") + 1;
-	fn_name = kzalloc(fn_name_len, GFP_KERNEL);
+	fn_name = kzalloc(strlen(grp_name) + strlen("-func"),
+						GFP_KERNEL);
 	if (!fn_name) {
 		ret = -ENOMEM;
 		goto func_err;
 	}
-	snprintf(fn_name, fn_name_len, "%s-func", grp_name);
+	snprintf(fn_name, strlen(grp_name) + strlen("-func") + 1, "%s%s",
+						grp_name, "-func");
 	map[*nmaps].data.mux.group = grp_name;
 	map[*nmaps].data.mux.function = fn_name;
 	map[*nmaps].type = PIN_MAP_TYPE_MUX_GROUP;
@@ -367,7 +364,7 @@ static void msm_dt_free_map(struct pinctrl_dev *pctldev,
 	for (idx = 0; idx < num_maps; idx++) {
 		if (map[idx].type == PIN_MAP_TYPE_CONFIGS_GROUP)
 			kfree(map[idx].data.configs.configs);
-		else if (map[idx].type == PIN_MAP_TYPE_MUX_GROUP)
+		else if (map->type == PIN_MAP_TYPE_MUX_GROUP)
 			kfree(map[idx].data.mux.function);
 	};
 

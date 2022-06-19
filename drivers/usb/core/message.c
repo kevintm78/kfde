@@ -1168,7 +1168,6 @@ void usb_disable_device(struct usb_device *dev, int skip_ep0)
 		/* Now that the interfaces are unbound, nobody should
 		 * try to access them.
 		 */
-		pm_runtime_barrier(&dev->dev);
 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
 			put_device(&dev->actconfig->interface[i]->dev);
 			dev->actconfig->interface[i] = NULL;

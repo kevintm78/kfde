@@ -1251,13 +1251,8 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
 			/* Ignore errors during system sleep transitions */
 			if (!PMSG_IS_AUTO(msg))
 				status = 0;
-			if (status != 0) {
-#if defined(CONFIG_MACH_TRLTE_ATT)
-				dev_err(&udev->dev, "%s: i: %d, status: %d\n",
-						__func__, i, status);
-#endif
+			if (status != 0)
 				break;
-			}
 		}
 	}
 	if (status == 0) {
@@ -1295,11 +1290,7 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
 	}
 
  done:
-#if defined(CONFIG_MACH_TRLTE_ATT)
-	dev_info(&udev->dev, "%s: status %d\n", __func__, status);
-#else
 	dev_vdbg(&udev->dev, "%s: status %d\n", __func__, status);
-#endif
 	return status;
 }
 
@@ -1348,11 +1339,7 @@ static int usb_resume_both(struct usb_device *udev, pm_message_t msg)
 	usb_mark_last_busy(udev);
 
  done:
-#if defined(CONFIG_MACH_TRLTE_ATT)
-	dev_info(&udev->dev, "%s: status %d\n", __func__, status);
-#else
 	dev_vdbg(&udev->dev, "%s: status %d\n", __func__, status);
-#endif
 	if (!status)
 		udev->reset_resume = 0;
 	return status;

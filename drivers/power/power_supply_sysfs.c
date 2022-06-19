@@ -45,22 +45,18 @@ static ssize_t power_supply_show_property(struct device *dev,
 					  char *buf) {
 	static char *type_text[] = {
 		"Unknown", "Battery", "UPS", "Mains", "USB",
-		"USB_DCP", "USB_CDP", "USB_ACA",
-		"BMS", "MISC", "Wireless", "CARDOCK", "UARTOFF", "OTG",
-		"LAN_HUB", "MHL_500", "MHL_900", "MHL_1500", "MHL_2000",
-		"MHL_USB", "MHL_USB_100", "SMART_OTG", "SMART_NOTG", "POWER_SHARING",
-		"HV_Prepare_Mains", "HV_Err", "HV_Unknown", "HV_Mains"
+		"USB_DCP", "USB_CDP", "USB_ACA", "Wireless", "BMS"
 	};
 	static char *status_text[] = {
 		"Unknown", "Charging", "Discharging", "Not charging", "Full"
 	};
 	static char *charge_type[] = {
-		"Unknown", "N/A", "Trickle", "Fast", "Slow"
+		"Unknown", "N/A", "Trickle", "Fast"
 	};
 	static char *health_text[] = {
 		"Unknown", "Good", "Overheat", "Warm", "Dead", "Over voltage",
 		"Unspecified failure", "Cold", "Cool", "Watchdog timer expire",
-		"Safety timer expire", "Under voltage"
+		"Safety timer expire"
 	};
 	static char *technology_text[] = {
 		"Unknown", "NiMH", "Li-ion", "Li-poly", "LiFe", "NiCd",
