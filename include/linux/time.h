@@ -68,7 +68,7 @@ static inline struct timespec timespec_add(struct timespec lhs,
 {
 	struct timespec ts_delta;
 	set_normalized_timespec(&ts_delta, lhs.tv_sec + rhs.tv_sec,
-				(s64)lhs.tv_nsec + rhs.tv_nsec);
+				lhs.tv_nsec + rhs.tv_nsec);
 	return ts_delta;
 }
 
@@ -80,7 +80,7 @@ static inline struct timespec timespec_sub(struct timespec lhs,
 {
 	struct timespec ts_delta;
 	set_normalized_timespec(&ts_delta, lhs.tv_sec - rhs.tv_sec,
-				(s64)lhs.tv_nsec - rhs.tv_nsec);
+				lhs.tv_nsec - rhs.tv_nsec);
 	return ts_delta;
 }
 

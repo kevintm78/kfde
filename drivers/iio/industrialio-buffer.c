@@ -528,8 +528,7 @@ int iio_update_buffers(struct iio_dev *indio_dev,
 			 * Roll back.
 			 * Note can only occur when adding a buffer.
 			 */
-			if(insert_buffer)
-				list_del(&insert_buffer->buffer_list);
+			list_del(&insert_buffer->buffer_list);
 			indio_dev->active_scan_mask = old_mask;
 			success = -EINVAL;
 		}

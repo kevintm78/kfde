@@ -283,10 +283,8 @@ static struct neighbour *neigh_alloc(struct neigh_table *tbl, struct net_device 
 	}
 
 	n = kzalloc(tbl->entry_size + dev->neigh_priv_len, GFP_ATOMIC);
-	if (!n) {
-		printk(KERN_WARNING "kzalloc() failed.\n");
+	if (!n)
 		goto out_entries;
-	}
 
 	__skb_queue_head_init(&n->arp_queue);
 	rwlock_init(&n->lock);
@@ -470,7 +468,6 @@ struct neighbour *__neigh_create(struct neigh_table *tbl, const void *pkey,
 	struct neigh_hash_table *nht;
 
 	if (!n) {
-		printk(KERN_WARNING "neigh_alloc() failed by no buffer.\n");
 		rc = ERR_PTR(-ENOBUFS);
 		goto out;
 	}

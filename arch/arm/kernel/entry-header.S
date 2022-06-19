@@ -6,7 +6,6 @@
 #include <asm/errno.h>
 #include <asm/thread_info.h>
 
-
 @ Bad Abort numbers
 @ -----------------
 @

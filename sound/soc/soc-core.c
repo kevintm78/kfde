@@ -1361,7 +1361,7 @@ static int soc_probe_link_dais(struct snd_soc_card *card, int num, int order)
 			if (!try_module_get(cpu_dai->dev->driver->owner))
 				return -ENODEV;
 
-			//list_add(&cpu_dai->dapm.list, &card->dapm_list);
+			list_add(&cpu_dai->dapm.list, &card->dapm_list);
 			snd_soc_dapm_new_dai_widgets(&cpu_dai->dapm, cpu_dai);
 		}
 
@@ -2107,13 +2107,9 @@ unsigned int snd_soc_read(struct snd_soc_codec *codec, unsigned int reg)
 		dev_err(codec->dev, "read 0x%02x while offline\n", reg);
 		return -ENODEV;
 	}
-        if (codec->read) {
-		ret = codec->read(codec, reg);
-		dev_dbg(codec->dev, "read %x => %x\n", reg, ret);
-		trace_snd_soc_reg_read(codec, reg, ret);
-        }
-        else
-		ret = -EIO;
+	ret = codec->read(codec, reg);
+	dev_dbg(codec->dev, "read %x => %x\n", reg, ret);
+	trace_snd_soc_reg_read(codec, reg, ret);
 
 	return ret;
 }
@@ -2126,13 +2122,9 @@ unsigned int snd_soc_write(struct snd_soc_codec *codec,
 		dev_err(codec->dev, "write 0x%02x while offline\n", reg);
 		return -ENODEV;
 	}
-	if (codec->write) {
-		dev_dbg(codec->dev, "write %x = %x\n", reg, val);
-		trace_snd_soc_reg_write(codec, reg, val);
-		return codec->write(codec, reg, val);
-        }
-	else
-		return -EIO;
+	dev_dbg(codec->dev, "write %x = %x\n", reg, val);
+	trace_snd_soc_reg_write(codec, reg, val);
+	return codec->write(codec, reg, val);
 }
 EXPORT_SYMBOL_GPL(snd_soc_write);
 
